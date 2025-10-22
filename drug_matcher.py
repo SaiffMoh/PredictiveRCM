@@ -66,14 +66,20 @@ class DrugMatcher:
     def _clean_service_code(self, code):
         """
         Clean service_code for matching with SFDA RegisterNumber
-        Remove special characters, spaces, and normalize
+        Remove 'Taw-' prefix if present, special characters, spaces, and normalize
         """
         if pd.isna(code):
             return None
         code_str = str(code).strip().upper()
+
+        # Remove 'TAW-' prefix if present (case-insensitive)
+        if code_str.upper().startswith('TAW-'):
+            code_str = code_str[4:]
+
         # Remove common separators and special chars
         code_str = re.sub(r'[^A-Z0-9]', '', code_str)
         return code_str if code_str else None
+
 
     def _clean_scientific_name(self, name):
         """
