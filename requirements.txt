@@ -1,0 +1,8 @@
+streamlit
+pandas
+numpy
+openai
+python-dotenv
+scikit-learn
+sentence-transformers
+tqdm
