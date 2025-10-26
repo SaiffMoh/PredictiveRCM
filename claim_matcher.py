@@ -18,18 +18,32 @@ class ClaimMatcher:
         self.embedder = SentenceTransformer('all-MiniLM-L6-v2')
         print("Model loaded successfully!\n")
 
-    def load_data(self, raw_file_path, pricing_file_path, naphies_file_path):
+    def load_data(self, raw_file_path, pricing_file_path, naphies_file_path, sheet_name='Worksheet'):
         """
         Load all required data files
+        
+        Args:
+            raw_file_path: Path to raw claims Excel file
+            pricing_file_path: Path to pricing list Excel file
+            naphies_file_path: Path to NAPHIES reference Excel file
+            sheet_name: Name of the sheet to read from raw_file (default: 'Worksheet')
         """
         print("="*60)
         print("LOADING DATA FILES")
         print("="*60)
 
-        self.raw_data = pd.read_excel(raw_file_path, sheet_name='Worksheet')
+        # Load raw data with specified sheet name
+        try:
+            self.raw_data = pd.read_excel(raw_file_path, sheet_name=sheet_name)
+            print(f"✓ Loaded {len(self.raw_data):,} rows from raw data (sheet: '{sheet_name}')")
+        except ValueError as e:
+            # Try to read the first sheet if specified sheet not found
+            print(f"⚠ Sheet '{sheet_name}' not found, reading first sheet...")
+            self.raw_data = pd.read_excel(raw_file_path, sheet_name=0)
+            print(f"✓ Loaded {len(self.raw_data):,} rows from raw data (first sheet)")
+        
         # Normalize service_code to string
         self.raw_data['service_code'] = self.raw_data['service_code'].fillna('').astype(str)
-        print(f"✓ Loaded {len(self.raw_data):,} rows from raw data")
         print(f"→ Duplicate rows in raw data: {self.raw_data.duplicated().sum()}")
 
         self.pricing_list = pd.read_excel(pricing_file_path, sheet_name='Worksheet')
@@ -454,9 +468,22 @@ class ClaimMatcher:
                     output_file='processed_claims.xlsx',
                     no_match_file='no_match_claims.xlsx',
                     review_file='needs_review_claims.xlsx',
-                    semantic_threshold=0.75):
-        """Run the complete matching pipeline"""
-        self.load_data(raw_file, pricing_file, naphies_file)
+                    semantic_threshold=0.75,
+                    sheet_name='Worksheet'):
+        """
+        Run the complete matching pipeline
+        
+        Args:
+            raw_file: Path to raw claims file
+            pricing_file: Path to pricing list file
+            naphies_file: Path to NAPHIES reference file
+            output_file: Output path for all processed claims
+            no_match_file: Output path for no-match claims
+            review_file: Output path for claims needing review
+            semantic_threshold: Minimum similarity score for Path 2 (default: 0.75)
+            sheet_name: Sheet name to read from raw_file (default: 'Worksheet')
+        """
+        self.load_data(raw_file, pricing_file, naphies_file, sheet_name=sheet_name)
 
         initial_rows = len(self.raw_data)
         self.raw_data = self.raw_data.drop_duplicates()
